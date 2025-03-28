@@ -53,6 +53,13 @@ async function run() {
             res.send(items);
         });
 
+        app.get('/items/:category', async (req, res) => {
+            const category = req.params.category;
+            const items = await itemCollection.find({ category: category }).toArray();
+            res.send(items);
+        });
+        
+
         app.post('/items', async (req, res) => {
             const item = req.body;
             const result = await itemCollection.insertOne(item);
