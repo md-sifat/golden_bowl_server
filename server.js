@@ -27,6 +27,9 @@ async function run() {
 
         const userCollection = client.db(process.env.MONGO_DB_NAME).collection("users");
         const itemCollection = client.db(process.env.MONGO_DB_NAME).collection("items");
+        const orderCollection = client.db(process.env.MONGO_DB_NAME).collection("orders");
+        
+        // all the api routes related to users , login and registration 
 
         app.get('/users', async (req, res) => {
             const user = await userCollection.find().toArray();
@@ -47,6 +50,8 @@ async function run() {
             const result = await userCollection.deleteOne(query);
             res.send(result);
         });
+
+        // all the routes api related to fetch and modify items 
 
         app.get('/items', async (req, res) => {
             const items = await itemCollection.find().toArray();
@@ -88,9 +93,6 @@ async function run() {
             const result = await itemCollection.deleteOne(query);
             res.send(result);
         });
-
-        const { ObjectId } = require("mongodb");
-
         app.put("/items/:id", async (req, res) => {
             try {
                 const id = req.params.id;
@@ -110,6 +112,15 @@ async function run() {
                 console.error("Error updating item:", error);
                 res.status(500).send({ success: false, message: "Internal Server Error" });
             }
+        });
+
+        // all the routes api related to orders and maintain them : 
+
+        app.post('/orders', async (req, res) => {
+            const item = req.body;
+            const result = await orderCollection.insertOne(item);
+            console.log(result);
+            res.send(result);
         });
 
 
