@@ -28,7 +28,7 @@ async function run() {
         const userCollection = client.db(process.env.MONGO_DB_NAME).collection("users");
         const itemCollection = client.db(process.env.MONGO_DB_NAME).collection("items");
         const orderCollection = client.db(process.env.MONGO_DB_NAME).collection("orders");
-        
+
         // all the api routes related to users , login and registration 
 
         app.get('/users', async (req, res) => {
@@ -50,6 +50,24 @@ async function run() {
             const result = await userCollection.deleteOne(query);
             res.send(result);
         });
+        app.get('/users/role', async (req, res) => {
+            const { email, role } = req.query;
+            if (!email || !role) {
+                return res.status(400).send({ message: 'Email and role are required' });
+            }
+            try {
+                const user = await userCollection.findOne({
+                    email: email,
+                    role: role
+                });
+                if (!user) {
+                    return res.status(404).send({ message: 'User not found with given email and role' });
+                }
+                res.status(200).send(user);
+            } catch (error) {
+                res.status(500).send({ message: 'Error fetching user', error });
+            }
+        });
 
         // all the routes api related to fetch and modify items 
 
@@ -63,7 +81,7 @@ async function run() {
             const items = await itemCollection.find({ category: category }).toArray();
             res.send(items);
         });
-        
+
 
         app.post('/items', async (req, res) => {
             const item = req.body;
@@ -96,7 +114,7 @@ async function run() {
         app.put("/items/:id", async (req, res) => {
             try {
                 const id = req.params.id;
-                const { _id, ...updateditem } = req.body; // Exclude _id from update
+                const { _id, ...updateditem } = req.body;
 
                 const filter = { _id: new ObjectId(id) };
                 const updateDoc = { $set: updateditem };
@@ -121,6 +139,28 @@ async function run() {
             const result = await orderCollection.insertOne(item);
             console.log(result);
             res.send(result);
+        });
+
+
+        app.put("/items/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const { _id, ...updateditem } = req.body;
+
+                const filter = { _id: new ObjectId(id) };
+                const updateDoc = { $set: updateditem };
+
+                const result = await orderCollection.updateOne(filter, updateDoc);
+
+                if (result.modifiedCount > 0) {
+                    res.send({ success: true, message: "item updated successfully" });
+                } else {
+                    res.send({ success: false, message: "No changes made or item not found" });
+                }
+            } catch (error) {
+                console.error("Error updating item:", error);
+                res.status(500).send({ success: false, message: "Internal Server Error" });
+            }
         });
 
 
