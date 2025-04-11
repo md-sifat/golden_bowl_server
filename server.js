@@ -28,8 +28,45 @@ async function run() {
         const userCollection = client.db(process.env.MONGO_DB_NAME).collection("users");
         const itemCollection = client.db(process.env.MONGO_DB_NAME).collection("items");
         const orderCollection = client.db(process.env.MONGO_DB_NAME).collection("orders");
+        const sessions = client.db(process.env.MONGO_DB_NAME).collection("sessions");
+
+        app.get('/sessions/active', async (req, res) => {
+            try {
+              const session = await sessions.findOne({ _id: "active-session" });
+              if (session) {
+                res.status(200).json(session);
+              } else {
+                res.status(404).json({ message: 'No active session found' });
+              }
+            } catch (err) {
+              res.status(500).json({ message: 'Server error', error: err.message });
+            }
+          });
+
+          app.put('/sessions/active', async (req, res) => {
+            const { user, role , loggedIn } = req.body;
+          
+            if (!user || !role) {
+              return res.status(400).json({ message: 'User and role are required' });
+            }
+          
+            try {
+              const result = await sessions.updateOne(
+                { _id: 'active-session' },
+                { $set: { user, role, loggedIn ,  updatedAt: new Date() } },
+                { upsert: true } 
+              );
+          
+              res.status(200).json({ message: 'Session updated successfully', result });
+            } catch (err) {
+              res.status(500).json({ message: 'Server error', error: err.message });
+            }
+          });
+
 
         // all the api routes related to users , login and registration 
+
+        
 
         app.get('/users', async (req, res) => {
             const user = await userCollection.find().toArray();
