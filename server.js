@@ -32,41 +32,41 @@ async function run() {
 
         app.get('/sessions/active', async (req, res) => {
             try {
-              const session = await sessions.findOne({ _id: "active-session" });
-              if (session) {
-                res.status(200).json(session);
-              } else {
-                res.status(404).json({ message: 'No active session found' });
-              }
+                const session = await sessions.findOne({ _id: "active-session" });
+                if (session) {
+                    res.status(200).json(session);
+                } else {
+                    res.status(404).json({ message: 'No active session found' });
+                }
             } catch (err) {
-              res.status(500).json({ message: 'Server error', error: err.message });
+                res.status(500).json({ message: 'Server error', error: err.message });
             }
-          });
+        });
 
-          app.put('/sessions/active', async (req, res) => {
-            const { user, role , loggedIn } = req.body;
-          
+        app.put('/sessions/active', async (req, res) => {
+            const { user, role, loggedIn } = req.body;
+
             if (!user || !role) {
-              return res.status(400).json({ message: 'User and role are required' });
+                return res.status(400).json({ message: 'User and role are required' });
             }
-          
+
             try {
-              const result = await sessions.updateOne(
-                { _id: 'active-session' },
-                { $set: { user, role, loggedIn ,  updatedAt: new Date() } },
-                { upsert: true } 
-              );
-          
-              res.status(200).json({ message: 'Session updated successfully', result });
+                const result = await sessions.updateOne(
+                    { _id: 'active-session' },
+                    { $set: { user, role, loggedIn, updatedAt: new Date() } },
+                    { upsert: true }
+                );
+
+                res.status(200).json({ message: 'Session updated successfully', result });
             } catch (err) {
-              res.status(500).json({ message: 'Server error', error: err.message });
+                res.status(500).json({ message: 'Server error', error: err.message });
             }
-          });
+        });
 
 
         // all the api routes related to users , login and registration 
 
-        
+
 
         app.get('/users', async (req, res) => {
             const user = await userCollection.find().toArray();
@@ -151,15 +151,12 @@ async function run() {
         app.put("/items/:id", async (req, res) => {
             try {
                 const id = req.params.id;
-                const { _id, ...updateditem } = req.body;
-
+                const { _id, ...updatedItem } = req.body;
                 const filter = { _id: new ObjectId(id) };
-                const updateDoc = { $set: updateditem };
-
+                const updateDoc = { $set: updatedItem };
                 const result = await itemCollection.updateOne(filter, updateDoc);
-
                 if (result.modifiedCount > 0) {
-                    res.send({ success: true, message: "item updated successfully" });
+                    res.send({ success: true, message: "Item updated successfully" });
                 } else {
                     res.send({ success: false, message: "No changes made or item not found" });
                 }
@@ -171,26 +168,44 @@ async function run() {
 
         // all the routes api related to orders and maintain them : 
 
+        app.get('/orders', async (req, res) => {
+            const orders = await orderCollection.find().toArray();
+            res.send(orders);
+        });
+
         app.post('/orders', async (req, res) => {
-            const item = req.body;
-            const result = await orderCollection.insertOne(item);
-            console.log(result);
-            res.send(result);
+            try {
+                const order = req.body;
+                if (!order.items || !order.totalPrice || !order.status || !order.createdAt) {
+                    return res.status(400).json({ message: 'All order fields are required' });
+                }
+
+                const result = await orderCollection.insertOne(order);
+                console.log('Insert result:', result);
+
+                res.status(201).json({
+                    message: 'Order created successfully',
+                    orderId: result.insertedId,
+                });
+            } catch (err) {
+                console.error('Error inserting order:', err);
+                res.status(500).json({ message: 'Server error', error: err.message });
+            }
         });
 
 
-        app.put("/items/:id", async (req, res) => {
+        app.put("/orders/:id", async (req, res) => {
             try {
                 const id = req.params.id;
-                const { _id, ...updateditem } = req.body;
+                const { _id, ...updatedItem } = req.body;
 
                 const filter = { _id: new ObjectId(id) };
-                const updateDoc = { $set: updateditem };
+                const updateDoc = { $set: updatedItem };
 
                 const result = await orderCollection.updateOne(filter, updateDoc);
 
                 if (result.modifiedCount > 0) {
-                    res.send({ success: true, message: "item updated successfully" });
+                    res.send({ success: true, message: "Item updated successfully" });
                 } else {
                     res.send({ success: false, message: "No changes made or item not found" });
                 }
